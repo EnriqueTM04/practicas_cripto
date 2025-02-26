@@ -1,0 +1,32 @@
+# Ignore caches and logs
+*.log
+*.cache
+*.tmp
+
+# Ignore IntelliJ IDEA project files
+.idea/
+*.iml
+*.iws
+
+# Ignore build directories
+/out/
+build/
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
+
+# Ignore Python compiled files
+__pycache__/
+*.py[cod]
+
+# Ignore node_modules
+node_modules/
+
+# Ignore other unnecessary files
+*.swp
+*.bak
+*.orig
+*.rej
+*.sublime-project
+*.sublime-workspace
