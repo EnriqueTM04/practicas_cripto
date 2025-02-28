@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="Practica0.css" rel="stylesheet" type="text/css" />
+    <title>Practica 0</title>
+</head>
+<body>
+    <div class="Encriptador-container">
+        <h1>Encriptar</h1>
+        <form id="encryption-form">
+            <input type="file" id="file-selector" accept=".txt">
+            <div class="input-box">
+                <input type="number" id="corrimiento" placeholder="Corrimiento" required>
+            </div>
+            <button type="button" class="encrypt-btn" id="encrypt-btn">Encriptar</button>
+            <button type="button" class="encrypt-btn" id="decrypt-btn">Descencriptar</button>
+        </form>
+
+        <script>
+            let asciiValues = [];
+
+            //Leer archivo
+            const fileSelector = document.getElementById('file-selector');
+            fileSelector.addEventListener('change', (event) => {
+                const file = event.target.files[0];  //Procesar el primer archivo
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const fileContent = e.target.result;  //Contenido del archivo
+                        console.log(fileContent);
+                        asciiValues = [];  //Reiniciar el array
+                        //Conversion a ascii
+                        for (let i = 0; i < fileContent.length; i++) {
+                            asciiValues.push(fileContent.charCodeAt(i));
+                        }
+                        console.log('Contenido ASCII del archivo:', asciiValues);
+                    };
+                    reader.readAsText(file);  //Leer archivo
+                }
+            });
+
+            //Funcion para guardar el archivo
+            function guardarArchivo(texto) {
+                const blob = new Blob([texto], { type: 'text/plain' });  //Blob con el texto
+                const link = document.createElement('a');  //Crear un enlace
+                link.href = URL.createObjectURL(blob);  //Blob URL
+                link.download = 'cancion_s.txt';  //Nombre del archivo
+                link.click();  
+            }
+
+            //Cifrado
+            function encriptar() {
+                const corrimiento = parseInt(document.getElementById('corrimiento').value); 
+                if (isNaN(corrimiento)) {
+                    alert("Por favor, ingrese un valor numérico para el corrimiento.");
+                    return;
+                }
+                const encryptedAscii = asciiValues.map(value => value + corrimiento);  //Suma
+                const encryptedText = encryptedAscii.map(value => String.fromCharCode(value)).join('');  //Conversion a ascii
+                console.log('Contenido encriptado (ASCII):', encryptedAscii);
+                console.log('Contenido encriptado (Texto):', encryptedText);  //print
+                guardarArchivo(encryptedText);
+            }
+
+            //Descifrado
+            function descencriptar() {
+                const corrimiento = parseInt(document.getElementById('corrimiento').value);
+                if (isNaN(corrimiento)) {
+                    alert("Por favor, ingrese un valor numérico para el corrimiento.");
+                    return;
+                }
+                const decryptedAscii = asciiValues.map(value => value - corrimiento);//Resta
+                const decryptedText = decryptedAscii.map(value => String.fromCharCode(value)).join('');  //Conversion a ASCII
+                console.log('Contenido descencriptado (ASCII):', decryptedAscii);
+                console.log('Contenido descencriptado (Texto):', decryptedText);  //print
+                guardarArchivo(decryptedText);
+            }
+
+            //Botones
+            document.getElementById('encrypt-btn').addEventListener('click', encriptar);
+            document.getElementById('decrypt-btn').addEventListener('click', descencriptar);
+        </script>
+    </div>
+</body>
+</html>
