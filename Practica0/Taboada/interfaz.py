@@ -17,11 +17,13 @@ def ejecutar_accion():
     extension = os.path.splitext(archivo)[1]
 
     if archivo == "Sin seleccionar" or not bits.isdigit():
-        error_label = Label(main_frame, text="Selecciona bytes y archivos", font=("Helvetica", 11), fg="#FF0000", bg="#F0F0F0")
-        error_label.grid(row=4, column=0, columnspan=2, pady=10)
-        error_label.after(2000, error_label.destroy)
+        mostrar_error("Selecciona un archivo y un número de bits")
     else :
         if(extension == ".bmp"):
+            bits = int(bits)
+            if bits < 1 or bits >= 256:
+                mostrar_error("Número de bits inválido")
+                return
             if modo == "corrimiento":
                 corrimiento_imagen(archivo, bits)
             else:
@@ -82,10 +84,9 @@ def corrimiento_imagen(archivo, bits):
         for x in range(ancho):
             for y in range(alto):
                 r, g, b = pixeles[x, y]
-                print(r, g, b)
-                r_corrido = r + bits
-                g_corrido = g + bits
-                b_corrido = b + bits
+                r_corrido = (r + bits) % 256
+                g_corrido = (g + bits) % 256
+                b_corrido = (b + bits) % 256
                 pixeles[x, y] = (r_corrido, g_corrido, b_corrido)
         imagen_rgb.save(nuevo_archivo + '_c.bmp')
     except Exception as e:
@@ -96,16 +97,17 @@ def regresar_imagen(archivo, bits):
     try:
         ruta_archivo = Path(archivo)
         nuevo_archivo = ruta_archivo.stem
-        imagen = Image.open(archivo)
+        nuevo_archivo += "_c"
+        imagen = Image.open(nuevo_archivo+'.bmp')
         imagen_rgb = imagen.convert('RGB')
         pixeles = imagen_rgb.load()
         ancho, alto = imagen.size
         for x in range(ancho):
             for y in range(alto):
                 r, g, b = pixeles[x, y]
-                r_corrido = r - bits
-                g_corrido = g - bits
-                b_corrido = b - bits
+                r_corrido = (r - bits) % 256
+                g_corrido = (g - bits) % 256
+                b_corrido = (b - bits) % 256
                 pixeles[x, y] = (r_corrido, g_corrido, b_corrido)
         imagen_rgb.save(nuevo_archivo + '_r.bmp')
     except Exception as e:
