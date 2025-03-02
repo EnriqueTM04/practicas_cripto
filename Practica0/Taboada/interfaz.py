@@ -3,16 +3,19 @@ from pathlib import Path
 import os
 from PIL import Image
 
+#seleccionar archivo
 def seleccionar_archivo():
     archivo = filedialog.askopenfilename(filetypes=[("Archivos BMP", "*.bmp"), ("Archivos TXT", "*.txt")])
     if archivo:
         label_archivo.config(text=archivo)
 
+#ejecutar accion
 def ejecutar_accion():
     modo = modo_corrimiento.get()
     bits = entrada_bits.get()
     archivo = label_archivo.cget("text")
     extension = os.path.splitext(archivo)[1]
+
     if archivo == "Sin seleccionar" or not bits.isdigit():
         error_label = Label(main_frame, text="Selecciona bytes y archivos", font=("Helvetica", 11), fg="#FF0000", bg="#F0F0F0")
         error_label.grid(row=4, column=0, columnspan=2, pady=10)
