@@ -7,12 +7,23 @@ from PIL import Image
 def ejecutar_accion():
     a = valor_a.get()
     b = valor_b.get()
+    resultado = euclides(int(a), int(b))
+    mostrar_resultado(resultado)
+
+def euclides(a, b):
+    while b != 0:  # Mientras el residuo no sea 0
+        a, b = b, a % b  # Se asigna b a a, y el residuo a b
+    return a  # Cuando b es 0, a es el MCD
 
 
 def mostrar_error(mensaje):
     error_label = Label(main_frame, text=mensaje, font=("Helvetica", 11), fg="#FF0000", bg="#F0F0F0")
-    error_label.grid(row=4, column=0, columnspan=2, pady=10)
+    error_label.grid(row=5, column=0, columnspan=2, pady=10)
     error_label.after(2000, error_label.destroy)
+
+def mostrar_resultado(valor):
+    resultado_label = Label(main_frame, text=f"El MCD es: {valor}", font=("Helvetica", 14), fg="#FF0000", bg="#F0F0F0")
+    resultado_label.grid(row=5, column=0, columnspan=2, pady=10)
 
 root = Tk()
 root.title("Práctica 1: Corrimiento de Bits")
