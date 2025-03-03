@@ -8,6 +8,7 @@ def ejecutar_accion():
     a = valor_a.get()
     b = valor_b.get()
     resultado = euclides(int(a), int(b))
+    borrar_resultado()
     mostrar_resultado(resultado)
 
 def euclides(a, b):
@@ -22,11 +23,17 @@ def mostrar_error(mensaje):
     error_label.after(2000, error_label.destroy)
 
 def mostrar_resultado(valor):
+    global resultado_label
     resultado_label = Label(main_frame, text=f"El MCD es: {valor}", font=("Helvetica", 14), fg="#FF0000", bg="#F0F0F0")
     resultado_label.grid(row=5, column=0, columnspan=2, pady=10)
 
+def borrar_resultado() :
+    global resultado_label
+    if resultado_label:
+        resultado_label.destroy()
+
 root = Tk()
-root.title("Práctica 1: Corrimiento de Bits")
+root.title("Práctica 1: Algoritmo Euclides")
 root.geometry("800x600")
 root.configure(bg="#F0F0F0")
 
@@ -54,6 +61,8 @@ valor_a.grid(row=2, column=1, padx=10, pady=20, sticky="w")
 Label(main_frame, text="Valor de B:", bg="#F0F0F0", font=("Helvetica", 11)).grid(row=3, column=0, padx=10, pady=5, sticky="w")
 valor_b = Entry(main_frame, width=10, font=("Helvetica", 11))
 valor_b.grid(row=3, column=1, padx=10, pady=20, sticky="w")
+
+resultado_label = Label(main_frame, text=f"", font=("Helvetica", 14), fg="#FF0000", bg="#F0F0F0")
 
 # Crear archivos
 Button(main_frame, text="Ejecutar", command=ejecutar_accion, bg="#800020", fg="#FFFFFF", font=("Helvetica", 12, 'bold'), width=10, height=2).grid(row=4, column=0, columnspan=2, pady=30)
