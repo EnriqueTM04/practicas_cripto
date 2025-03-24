@@ -18,8 +18,10 @@ def ejecutar_accion():
         return
     borrar_resultado()
     # para C
-    mensaje = f"C = {a}p + {b} mod {n}\n"
+    mensaje = "***** Funcion de Cifrado ******\n"
+    mensaje += f"C = {a}p + {b} mod {n}\n"
     # para p
+    mensaje += "***** Funcion de Descifrado ******\n"
     mensaje += f"p = {a}^-1 * (C + (- {b}) mod {n}\n"
     # calcular inverso mult de a
     inverso_a = 0
