@@ -8,18 +8,21 @@ def ejecutar_accion():
     a = int(valor_a.get())
     b = int(valor_b.get())
     n = int(valor_n.get())
+    borrar_resultado()
     if not a or not b or not n:
         mostrar_error("Favor de llenar todos los campos")
+        return
+    if b >= n:
+        mostrar_error("Elige un valor de β menor a n")
         return
     # calcular mcd para a y n
     resultado = euclides(a, n)
     if resultado != 1:
         mostrar_error("El MCD de α y n debe ser 1")
         return
-    borrar_resultado()
     # para C
     mensaje = "***** Funcion de Cifrado ******\n"
-    mensaje += f"C = {a}p + {b} mod {n}\n"
+    mensaje += f"C = {a}p + {b} mod {n}\n\n"
     # para p
     mensaje += "***** Funcion de Descifrado ******\n"
     mensaje += f"p = {a}^-1 * (C + (- {b}) mod {n}\n"
@@ -62,7 +65,7 @@ def borrar_resultado() :
 
 root = Tk()
 root.title("Práctica 2: Afin")
-root.geometry("800x600")
+root.geometry("900x700")
 root.configure(bg="#F0F0F0")
 
 header_frame = Frame(root, bg="#800020", bd=1, relief="solid")
