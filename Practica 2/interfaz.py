@@ -13,7 +13,7 @@ def ejecutar_accion():
         mostrar_error("Favor de llenar todos los campos")
         return
     if b >= n:
-        mostrar_error("Elige un valor de β menor a n")
+        mostrar_error("\nElige un valor de β menor a n")
         return
     # calcular mcd para a y n
     resultado = euclides(a, n)
