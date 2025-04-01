@@ -17,8 +17,10 @@ def multiplicar_matrices():
         # Realizar la multiplicación de matrices
         resultado = np.dot(A, B)
 
+        modulo = int(entry_modulo.get())
+
         #Obtener el modulo de cada uno de los valores de la matriz
-        
+        resultado = resultado % modulo
 
         # Mostrar resultado
         resultado_str = "\n".join(["\t".join(map(str, row)) for row in resultado])
@@ -37,7 +39,7 @@ def borrar_resultado():
 
 def mostrar_error(mensaje):
     error_label = Label(main_frame, text=mensaje, font=("Helvetica", 11), fg="#FF0000", bg="#F0F0F0")
-    error_label.grid(row=10, column=0, columnspan=2, pady=10)
+    error_label.grid(row=11, column=0, columnspan=2, pady=10)
     error_label.after(2000, error_label.destroy)
 
 root = Tk()
@@ -120,14 +122,15 @@ entry_b33 = Entry(main_frame, width=5, font=("Helvetica", 12))
 entry_b33.grid(row=7, column=2, padx=5, pady=5)
 
 # Elegir el modulo para la matriz resultante
-entry_modulo = Entry(main_frame, width=5, font=("Helvetica", 12))
-entry_modulo.grid(row=8, column=0, columnspan=5, pady=10)
+Label(main_frame, text="Mod __ :", bg="#F0F0F0", font=("Helvetica", 11, "bold")).grid(row=8, column=0, columnspan=3, pady=10)
+entry_modulo = Entry(main_frame, width=10, font=("Helvetica", 12))
+entry_modulo.grid(row=9, column=0, columnspan=5, pady=10)
 
 # Botón para ejecutar la multiplicación
-Button(main_frame, text="Multiplicar", command=multiplicar_matrices, bg="#800020", fg="#FFFFFF", font=("Helvetica", 12, 'bold'), width=15, height=2).grid(row=9, column=0, columnspan=3, pady=30)
+Button(main_frame, text="Multiplicar", command=multiplicar_matrices, bg="#800020", fg="#FFFFFF", font=("Helvetica", 12, 'bold'), width=15, height=2).grid(row=10, column=0, columnspan=3, pady=30)
 
 # Etiqueta para mostrar el resultado
 resultado_label = Label(main_frame, text="", font=("Helvetica", 12), fg="#00913F", bg="#F0F0F0")
-resultado_label.grid(row=10, column=0, columnspan=3)
+resultado_label.grid(row=11, column=0, columnspan=3)
 
 root.mainloop()
