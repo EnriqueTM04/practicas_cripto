@@ -2,6 +2,9 @@ from tkinter import Tk, Label, Button, Entry, StringVar, IntVar, Frame, filedial
 from pathlib import Path
 import os
 from PIL import Image
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+from Crypto.Random import get_random_bytes
 
 #seleccionar archivo
 def seleccionar_archivo():
@@ -12,66 +15,87 @@ def seleccionar_archivo():
 #ejecutar accion
 def ejecutar_accion():
     modo = modo_corrimiento.get()
-    bits = entrada_bits.get()
+    key = valor_llave.get()
     archivo = label_archivo.cget("text")
     extension = os.path.splitext(archivo)[1]
 
-    if archivo == "Sin seleccionar" or not bits.isdigit():
-        mostrar_error("Selecciona un archivo y un número de bits")
-    else :
-        if(extension == ".bmp"):
-            bits = int(bits)
+    if archivo == "Sin seleccionar" or not key:
+        mostrar_error("Selecciona un archivo y proporciona una clave")
+        return
+
+    # Si es imagen, mantenemos el corrimiento de bits
+    if extension == ".bmp":
+        try:
+            bits = int(key)
             if bits < 1 or bits >= 256:
-                mostrar_error("Número de bits inválido")
+                mostrar_error("Número de bits inválido (1-255)")
                 return
             if modo == "corrimiento":
                 corrimiento_imagen(archivo, bits)
             else:
                 regresar_imagen(archivo, bits)
+        except:
+            mostrar_error("Valor de bits inválido (debe ser numérico)")
+            return
+    # Si es texto, usamos AES
+    elif extension == ".txt":
+        if len(key.encode('utf-8')) not in [16, 24, 32]:
+            mostrar_error("Clave AES debe tener 16, 24 o 32 caracteres")
+            return
+        if modo == "corrimiento":
+            corrimiento_texto(archivo, key)
         else:
-            bits = int(bits)
-            if bits < 1 or bits >= 26:
-                mostrar_error("Número de bits inválido")
-                return
-            if modo == "corrimiento":
-                corrimiento_texto(archivo, bits)
-            else:
-                regresar_texto(archivo, bits)
+            regresar_texto(archivo, key)
+    else:
+        mostrar_error("Archivo no soportado")
+
+
 
 def corrimiento_texto(nombre_archivo, bits):
     try:
-        with open(nombre_archivo, 'r', encoding='utf-8') as archivo:
-            texto = archivo.read()
-            texto_codificado = ""
-            for caracter in texto:
-                caracter_codificado = chr(ord(caracter) + bits)
-                texto_codificado += (caracter_codificado)
-            ruta_archivo = Path(nombre_archivo)
-            nuevo_archivo = ruta_archivo.stem
-            nuevo_archivo += "_c.txt"
-            with open(nuevo_archivo, 'w', encoding='utf-8') as archivo_codificado:
-                archivo_codificado.write(texto_codificado)
-    except:
-        mostrar_error("Error al hacer corrimiento")
-        return
+        key = valor_llave.get().encode('utf-8')
+        if len(key) not in [16, 24, 32]:
+            mostrar_error("La clave debe tener 16, 24 o 32 caracteres")
+            return
 
-def regresar_texto(archivo, bits):
-    ruta_archivo = Path(archivo)
-    nuevo_archivo = ruta_archivo.stem
-    nuevo_archivo += "_c"
+        with open(nombre_archivo, 'r', encoding='utf-8') as archivo:
+            texto = archivo.read().encode('utf-8')
+
+        cipher = AES.new(key, AES.MODE_CBC)
+        ciphertext = cipher.encrypt(pad(texto, AES.block_size))
+
+        ruta_archivo = Path(nombre_archivo)
+        nuevo_archivo = ruta_archivo.stem + "_c.txt"
+
+        with open(nuevo_archivo, 'wb') as archivo_codificado:
+            archivo_codificado.write(cipher.iv + ciphertext)  # Guardamos IV + datos cifrados
+    except Exception as e:
+        mostrar_error("Error al cifrar texto")
+        print(e)
+
+
+def regresar_texto(nombre_archivo, bits):
     try:
-        with open((nuevo_archivo + '.txt'), 'r', encoding='utf-8') as archivo:
-            texto = archivo.read()
-            texto_codificado = ""
-            for caracter in texto:
-                caracter_codificado = chr(ord(caracter) - bits)
-                texto_codificado += caracter_codificado
-            nuevo_archivo += "_r.txt"
-            with open(nuevo_archivo, 'w', encoding='utf-8') as texto_original:
-                texto_original.write(texto_codificado)
-    except:
-        mostrar_error("Error al hacer corrimiento")
-        return
+        key = valor_llave.get().encode('utf-8')
+        if len(key) not in [16, 24, 32]:
+            mostrar_error("La clave debe tener 16, 24 o 32 caracteres")
+            return
+
+        with open(nombre_archivo.replace(".txt", "_c.txt"), 'rb') as archivo:
+            data = archivo.read()
+            iv = data[:16]
+            ciphertext = data[16:]
+
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+        plaintext = unpad(cipher.decrypt(ciphertext), AES.block_size)
+
+        nuevo_archivo = Path(nombre_archivo).stem + "_r.txt"
+        with open(nuevo_archivo, 'w', encoding='utf-8') as texto_original:
+            texto_original.write(plaintext.decode('utf-8'))
+    except Exception as e:
+        mostrar_error("Error al descifrar texto")
+        print(e)
+
 
 def corrimiento_imagen(archivo, bits):
     try:
@@ -149,10 +173,10 @@ modo_corrimiento = StringVar(value="corrimiento")
 Radiobutton(main_frame, text="Corrimiento", variable=modo_corrimiento, value="corrimiento", bg="#F0F0F0", font=("Helvetica", 11)).grid(row=1, column=0, padx=10, pady=5, sticky="w")
 Radiobutton(main_frame, text="Regresar", variable=modo_corrimiento, value="regresar", bg="#F0F0F0", font=("Helvetica", 11)).grid(row=1, column=1, padx=10, pady=5, sticky="w")
 
-# Numero corrimiento
-Label(main_frame, text="Número de bits para correr:", bg="#F0F0F0", font=("Helvetica", 11)).grid(row=2, column=0, padx=10, pady=5, sticky="w")
-entrada_bits = Entry(main_frame, width=10, font=("Helvetica", 11))
-entrada_bits.grid(row=2, column=1, padx=10, pady=20, sticky="w")
+# Numero Llave
+Label(main_frame, text="Valor de la llave:", bg="#F0F0F0", font=("Helvetica", 11)).grid(row=2, column=0, padx=10, pady=5, sticky="w")
+valor_llave = Entry(main_frame, width=10, font=("Helvetica", 11))
+valor_llave.grid(row=2, column=1, padx=10, pady=20, sticky="w")
 
 # Crear archivos
 Button(main_frame, text="Ejecutar", command=ejecutar_accion, bg="#800020", fg="#FFFFFF", font=("Helvetica", 12, 'bold'), width=10, height=2).grid(row=3, column=0, columnspan=2, pady=30)
