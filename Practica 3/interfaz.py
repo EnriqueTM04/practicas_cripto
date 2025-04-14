@@ -4,6 +4,7 @@ import numpy as np
 
 # mostrar solo una o dos matrices dependiendo del modo de operacion
 def actualizar_vista():
+    borrar_resultado()
     modo = modo_operacion.get()
     if modo == "multiplicacion":
         label_matriz_b.grid()
@@ -17,6 +18,7 @@ def actualizar_vista():
 
 # Función para realizar la operación de matrices
 def operacion_martrices():
+    borrar_resultado()
     modo = modo_operacion.get()
     if modo == "multiplicacion":
         multiplicacion_martrices()
