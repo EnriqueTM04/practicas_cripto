@@ -8,7 +8,7 @@ from Crypto.Random import get_random_bytes
 
 #seleccionar archivo
 def seleccionar_archivo():
-    archivo = filedialog.askopenfilename(filetypes=[("Archivos BMP", "*.bmp"), ("Archivos TXT", "*.txt")])
+    archivo = filedialog.askopenfilename(filetypes=[("Archivos BMP", "*.bmp")])
     if archivo:
         label_archivo.config(text=archivo)
 
@@ -31,63 +31,8 @@ def ejecutar_accion():
             cifrar_imagen(archivo, key)
         else:
             descifrar_imagen(archivo, key)
-    elif extension == ".txt":
-        if len(key.encode('utf-8')) not in [16, 24, 32]:
-            mostrar_error("Clave AES debe tener 16, 24 o 32 caracteres")
-            return
-        if modo == "corrimiento":
-            cifrado_texto(archivo, key)
-        else:
-            regresar_texto(archivo, key)
     else:
         mostrar_error("Archivo no soportado")
-
-
-def cifrado_texto(nombre_archivo, bits):
-    try:
-        key = valor_llave.get().encode('utf-8')
-        if len(key) not in [16, 24, 32]:
-            mostrar_error("La clave debe tener 16, 24 o 32 caracteres")
-            return
-
-        with open(nombre_archivo, 'r', encoding='utf-8') as archivo:
-            texto = archivo.read().encode('utf-8')
-
-        cipher = AES.new(key, AES.MODE_CBC)
-        ciphertext = cipher.encrypt(pad(texto, AES.block_size))
-
-        ruta_archivo = Path(nombre_archivo)
-        nuevo_archivo = ruta_archivo.stem + "_c.txt"
-
-        with open(nuevo_archivo, 'wb') as archivo_codificado:
-            archivo_codificado.write(cipher.iv + ciphertext)  # Guardamos IV + datos cifrados
-    except Exception as e:
-        mostrar_error("Error al cifrar texto")
-        print(e)
-
-
-def regresar_texto(nombre_archivo, bits):
-    try:
-        key = valor_llave.get().encode('utf-8')
-        if len(key) not in [16, 24, 32]:
-            mostrar_error("La clave debe tener 16, 24 o 32 caracteres")
-            return
-
-        with open(nombre_archivo.replace(".txt", "_c.txt"), 'rb') as archivo:
-            data = archivo.read()
-            iv = data[:16]
-            ciphertext = data[16:]
-
-        cipher = AES.new(key, AES.MODE_CBC, iv)
-        plaintext = unpad(cipher.decrypt(ciphertext), AES.block_size)
-
-        nuevo_archivo = Path(nombre_archivo).stem + "_d.txt"
-        with open(nuevo_archivo, 'w', encoding='utf-8') as texto_original:
-            texto_original.write(plaintext.decode('utf-8'))
-    except Exception as e:
-        mostrar_error("Error al descifrar texto")
-        print(e)
-
 
 def cifrar_imagen(ruta_imagen, clave):
     try:
@@ -163,7 +108,7 @@ def mostrar_error(mensaje):
     error_label.after(2000, error_label.destroy)
 
 root = Tk()
-root.title("Práctica 1: Corrimiento de Bits")
+root.title("Práctica 5: Modos de operacion")
 root.geometry("800x600")
 root.configure(bg="#F0F0F0")
 
@@ -191,6 +136,8 @@ label_archivo.grid(row=0, column=1, padx=10, pady=20)
 modo_corrimiento = StringVar(value="corrimiento")
 Radiobutton(main_frame, text="Corrimiento", variable=modo_corrimiento, value="corrimiento", bg="#F0F0F0", font=("Helvetica", 11)).grid(row=1, column=0, padx=10, pady=5, sticky="w")
 Radiobutton(main_frame, text="Regresar", variable=modo_corrimiento, value="regresar", bg="#F0F0F0", font=("Helvetica", 11)).grid(row=1, column=1, padx=10, pady=5, sticky="w")
+
+# tipo de
 
 # Numero Llave
 Label(main_frame, text="Valor de la llave:", bg="#F0F0F0", font=("Helvetica", 11)).grid(row=2, column=0, padx=10, pady=5, sticky="w")
