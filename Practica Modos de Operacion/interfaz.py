@@ -26,12 +26,12 @@ def ejecutar_accion():
     if extension.lower() != ".bmp":
         mostrar_error("Solo se soportan archivos BMP")
         return
-    if len(clave.encode('utf-8')) not in (16, 24, 32):
+    if len(clave.encode('utf-8')) != 16:
         mostrar_error("Clave AES debe tener 16, 24 o 32 caracteres")
         return
 
-    if modo_aes_sel != 'ECB' and len(iv) != 16:
-        mostrar_error("El IV debe tener exactamente 16 caracteres para los modos CBC, CFB y OFB")
+    if len(iv) != 16:
+        mostrar_error("El IV debe tener exactamente 16 caracteres")
         return
 
     if accion == 'cifrar':
