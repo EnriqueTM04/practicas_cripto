@@ -13,7 +13,7 @@ def seleccionar_archivo():
 # ejecutar acción de cifrado/descifrado según opciones
 def ejecutar_accion():
     accion = modo_accion.get()
-    modo_aes_sel = modo_aes.get()  # 'ECB', 'CBC', 'CFB', 'OFB', 'CTR'
+    modo_aes_sel = modo_aes.get()
     clave = valor_llave.get()
     iv = valor_iv.get()
     ruta = label_archivo.cget("text")
@@ -27,11 +27,11 @@ def ejecutar_accion():
         mostrar_error("Solo se soportan archivos BMP")
         return
     if len(clave.encode('utf-8')) != 16:
-        mostrar_error("Clave AES debe tener 16, 24 o 32 caracteres")
+        mostrar_error("Clave AES debe tener 16")
         return
 
     if len(iv) != 16:
-        mostrar_error("El IV debe tener exactamente 16 caracteres para los modos CBC, CFB y OFB")
+        mostrar_error("El IV debe tener exactamente 16")
         return
 
     if accion == 'cifrar':
@@ -70,8 +70,8 @@ def cifrar_imagen(ruta_imagen, clave, modo_aes_sel, iv_usuario):
 
         cifrado = cipher.encrypt(pad(pixeles, AES.block_size))
 
-        original_stem = Path(ruta_imagen).stem
-        nuevo_nombre = f"{original_stem}_e_{modo_aes_sel.lower()}.bmp"
+        nombre_original = Path(ruta_imagen).stem
+        nuevo_nombre = f"{nombre_original}_e_{modo_aes_sel.lower()}.bmp"
 
         with open(nuevo_nombre, 'wb') as out:
             out.write(encabezado)
@@ -81,8 +81,6 @@ def cifrar_imagen(ruta_imagen, clave, modo_aes_sel, iv_usuario):
                 out.write(iv)
             out.write(cifrado)
 
-        print(f"Imagen cifrada ({modo_aes_sel}) guardada como: {nuevo_nombre}")
-        return nuevo_nombre
     except Exception as e:
         print(f"Error al cifrar: {e}")
 
@@ -123,15 +121,13 @@ def descifrar_imagen(ruta_cifrada, clave, modo_aes_sel, iv_usuario):
 
         datos_desc = unpad(cipher.decrypt(datos_cifrados), AES.block_size)
 
-        cifrado_stem = Path(ruta_cifrada).stem
-        nuevo_nombre = f"{cifrado_stem}_d_{modo_aes_sel.lower()}.bmp"
+        nombre_original = Path(ruta_cifrada).stem
+        nuevo_nombre = f"{nombre_original}_d_{modo_aes_sel.lower()}.bmp"
 
         with open(nuevo_nombre, 'wb') as out:
             out.write(encabezado)
             out.write(datos_desc)
 
-        print(f"Imagen descifrada ({modo_aes_sel}) guardada como: {nuevo_nombre}")
-        return nuevo_nombre
     except ValueError as ve:
         print(f"Error de padding/clave incorrecta: {ve}")
     except Exception as e:
