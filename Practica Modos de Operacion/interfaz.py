@@ -13,7 +13,7 @@ def seleccionar_archivo():
 # ejecutar acción de cifrado/descifrado según opciones
 def ejecutar_accion():
     accion = modo_accion.get()
-    modo_aes_sel = modo_aes.get()  # 'ECB', 'CBC', 'CFB', 'OFB'
+    modo_aes_sel = modo_aes.get()  # 'ECB', 'CBC', 'CFB', 'OFB', 'CTR'
     clave = valor_llave.get()
     iv = valor_iv.get()
     ruta = label_archivo.cget("text")
@@ -31,7 +31,7 @@ def ejecutar_accion():
         return
 
     if len(iv) != 16:
-        mostrar_error("El IV debe tener exactamente 16 caracteres")
+        mostrar_error("El IV debe tener exactamente 16 caracteres para los modos CBC, CFB y OFB")
         return
 
     if accion == 'cifrar':
@@ -53,13 +53,17 @@ def cifrar_imagen(ruta_imagen, clave, modo_aes_sel, iv_usuario):
             'ECB': AES.MODE_ECB,
             'CBC': AES.MODE_CBC,
             'CFB': AES.MODE_CFB,
-            'OFB': AES.MODE_OFB
+            'OFB': AES.MODE_OFB,
+            'CTR': AES.MODE_CTR
         }
         modo_const = modo_map[modo_aes_sel]
 
         if modo_aes_sel == 'ECB':
             cipher = AES.new(key_bytes, modo_const)
             iv = b''
+        elif modo_aes_sel == 'CTR':
+            cipher = AES.new(key_bytes, modo_const)
+            nonce = cipher.nonce
         else:
             iv = iv_usuario.encode('utf-8') if iv_usuario else None
             cipher = AES.new(key_bytes, modo_const, iv=iv)
@@ -71,7 +75,9 @@ def cifrar_imagen(ruta_imagen, clave, modo_aes_sel, iv_usuario):
 
         with open(nuevo_nombre, 'wb') as out:
             out.write(encabezado)
-            if iv:
+            if modo_aes_sel == 'CTR':
+                out.write(nonce)
+            elif iv:
                 out.write(iv)
             out.write(cifrado)
 
@@ -91,8 +97,11 @@ def descifrar_imagen(ruta_cifrada, clave, modo_aes_sel, iv_usuario):
         if modo_aes_sel == 'ECB':
             iv = b''
             datos_cifrados = datos[pixel_offset:]
+        elif modo_aes_sel == 'CTR':
+            nonce = datos[pixel_offset:pixel_offset+8]
+            datos_cifrados = datos[pixel_offset+8:]
         else:
-            iv = iv_usuario.encode('utf-8') if iv_usuario else datos[pixel_offset:pixel_offset+16]
+            iv = datos[pixel_offset:pixel_offset+16] if not iv_usuario else iv_usuario.encode('utf-8')
             datos_cifrados = datos[pixel_offset+16:]
 
         key_bytes = clave.encode('utf-8')
@@ -100,11 +109,18 @@ def descifrar_imagen(ruta_cifrada, clave, modo_aes_sel, iv_usuario):
             'ECB': AES.MODE_ECB,
             'CBC': AES.MODE_CBC,
             'CFB': AES.MODE_CFB,
-            'OFB': AES.MODE_OFB
+            'OFB': AES.MODE_OFB,
+            'CTR': AES.MODE_CTR
         }
         modo_const = modo_map[modo_aes_sel]
 
-        cipher = AES.new(key_bytes, modo_const, iv=iv)
+        if modo_aes_sel == 'ECB':
+            cipher = AES.new(key_bytes, modo_const)
+        elif modo_aes_sel == 'CTR':
+            cipher = AES.new(key_bytes, modo_const, nonce=nonce)
+        else:
+            cipher = AES.new(key_bytes, modo_const, iv=iv)
+
         datos_desc = unpad(cipher.decrypt(datos_cifrados), AES.block_size)
 
         cifrado_stem = Path(ruta_cifrada).stem
@@ -162,7 +178,7 @@ Radiobutton(main_frame, text="Descifrar", variable=modo_accion, value="descifrar
 # Modo AES
 Label(main_frame, text="Modo AES:", bg="#F0F0F0", font=("Helvetica", 11)).grid(row=2, column=0, sticky="w", padx=10)
 modo_aes = StringVar(value="CBC")
-for i, modo in enumerate(["ECB", "CBC", "CFB", "OFB"]):
+for i, modo in enumerate(["ECB", "CBC", "CFB", "OFB", "CTR"]):
     Radiobutton(main_frame, text=modo, variable=modo_aes, value=modo, bg="#F0F0F0", font=("Helvetica", 11)).grid(row=2, column=1+i, sticky="w")
 
 # Valor de la llave AES
