@@ -15,7 +15,7 @@ def ejecutar_accion():
     accion = modo_accion.get()
     modo_aes_sel = modo_aes.get()
     clave = valor_llave.get()
-    c0 = valor_c0.get()
+    iv = valor_c0.get()
     ruta = label_archivo.cget("text")
     extension = os.path.splitext(ruta)[1]
 
@@ -30,17 +30,17 @@ def ejecutar_accion():
         mostrar_error("Clave AES debe tener 16")
         return
 
-    if len(c0) != 16:
+    if len(iv) != 16:
         mostrar_error("El C0 debe tener exactamente 16")
         return
 
     if accion == 'cifrar':
-        cifrar_imagen(ruta, clave, modo_aes_sel, c0)
+        cifrar_imagen(ruta, clave, modo_aes_sel, iv)
     else:
-        descifrar_imagen(ruta, clave, modo_aes_sel, c0)
+        descifrar_imagen(ruta, clave, modo_aes_sel, iv)
 
 # cifrado de imagen BMP con diferentes modos AES
-def cifrar_imagen(ruta_imagen, clave, modo_aes_sel, c0_usuario):
+def cifrar_imagen(ruta_imagen, clave, modo_aes_sel, iv_usuario):
     try:
         with open(ruta_imagen, 'rb') as f:
             datos = f.read()
@@ -60,13 +60,13 @@ def cifrar_imagen(ruta_imagen, clave, modo_aes_sel, c0_usuario):
 
         if modo_aes_sel == 'ECB':
             cipher = AES.new(key_bytes, modo_const)
-            c0 = b''
+            iv = b''
         elif modo_aes_sel == 'CTR':
             cipher = AES.new(key_bytes, modo_const)
             nonce = cipher.nonce
         else:
-            c0 = c0_usuario.encode('utf-8') if c0_usuario else None
-            cipher = AES.new(key_bytes, modo_const, c0=c0)
+            iv = iv_usuario.encode('utf-8') if iv_usuario else None
+            cipher = AES.new(key_bytes, modo_const, iv=iv)
 
         cifrado = cipher.encrypt(pad(pixeles, AES.block_size))
 
@@ -77,61 +77,59 @@ def cifrar_imagen(ruta_imagen, clave, modo_aes_sel, c0_usuario):
             out.write(encabezado)
             if modo_aes_sel == 'CTR':
                 out.write(nonce)
-            elif c0:
-                out.write(c0)
+            elif iv:
+                out.write(iv)
             out.write(cifrado)
 
     except Exception as e:
         print(f"Error al cifrar: {e}")
 
 # descifrado de imagen BMP con diferentes modos AES
-def descifrar_imagen(ruta_cifrada, clave, modo_aes_sel, c0_usuario):
-    try:
-        with open(ruta_cifrada, 'rb') as f:
-            datos = f.read()
-        pixel_offset = int.from_bytes(datos[10:14], 'little')
-        encabezado = datos[:pixel_offset]
+def descifrar_imagen(ruta_cifrada, clave, modo_aes_sel, iv_usuario):
+    with open(ruta_cifrada, 'rb') as f:
+        datos = f.read()
 
-        if modo_aes_sel == 'ECB':
-            c0 = b''
-            datos_cifrados = datos[pixel_offset:]
-        elif modo_aes_sel == 'CTR':
-            nonce = datos[pixel_offset:pixel_offset+8]
-            datos_cifrados = datos[pixel_offset+8:]
-        else:
-            c0 = datos[pixel_offset:pixel_offset+16] if not c0_usuario else c0_usuario.encode('utf-8')
-            datos_cifrados = datos[pixel_offset+16:]
+    # Offset real de los píxeles (igual que al cifrar)
+    pixel_offset = int.from_bytes(datos[10:14], 'little')
+    encabezado = datos[:pixel_offset]
 
-        key_bytes = clave.encode('utf-8')
-        modo_map = {
-            'ECB': AES.MODE_ECB,
-            'CBC': AES.MODE_CBC,
-            'CFB': AES.MODE_CFB,
-            'OFB': AES.MODE_OFB,
-            'CTR': AES.MODE_CTR
-        }
-        modo_const = modo_map[modo_aes_sel]
+    key_bytes = clave.encode('utf-8')
+    modo_map = {
+        'ECB': AES.MODE_ECB,
+        'CBC': AES.MODE_CBC,
+        'CFB': AES.MODE_CFB,
+        'OFB': AES.MODE_OFB,
+        'CTR': AES.MODE_CTR
+    }
+    modo_const = modo_map[modo_aes_sel]
 
-        if modo_aes_sel == 'ECB':
-            cipher = AES.new(key_bytes, modo_const)
-        elif modo_aes_sel == 'CTR':
-            cipher = AES.new(key_bytes, modo_const, nonce=nonce)
-        else:
-            cipher = AES.new(key_bytes, modo_const, c0=c0)
+    if modo_aes_sel == 'ECB':
+        # No hay IV ni nonce en ECB
+        datos_cifrados = datos[pixel_offset:]
+        cipher = AES.new(key_bytes, modo_const)
 
-        datos_desc = unpad(cipher.decrypt(datos_cifrados), AES.block_size)
+    elif modo_aes_sel == 'CTR':
+        # El nonce va justo después del header; su longitud predeterminada en PyCryptoDome es 8 bytes
+        nonce = datos[pixel_offset:pixel_offset+8]
+        datos_cifrados = datos[pixel_offset+8:]
+        cipher = AES.new(key_bytes, modo_const, nonce=nonce)
 
-        nombre_original = Path(ruta_cifrada).stem
-        nuevo_nombre = f"{nombre_original}_d_{modo_aes_sel.lower()}.bmp"
+    else:
+        # Para CBC, CFB y OFB: IV = 16 bytes tras el header
+        iv = datos[pixel_offset:pixel_offset + AES.block_size]
+        datos_cifrados = datos[pixel_offset + AES.block_size:]
+        cipher = AES.new(key_bytes, modo_const, iv=iv)
 
-        with open(nuevo_nombre, 'wb') as out:
-            out.write(encabezado)
-            out.write(datos_desc)
+    # Desencriptar y quitar padding
+    datos_desc = unpad(cipher.decrypt(datos_cifrados), AES.block_size)
 
-    except ValueError as ve:
-        print(f"Error de padding/clave incorrecta: {ve}")
-    except Exception as e:
-        print(f"Error al descifrar: {e}")
+    # Guardar BMP reconstruido
+    nombre_original = Path(ruta_cifrada).stem
+    nuevo_nombre = f"{nombre_original}_d_{modo_aes_sel.lower()}.bmp"
+    with open(nuevo_nombre, 'wb') as out:
+        out.write(encabezado)
+        out.write(datos_desc)
+
 
 # mostrar errores en GUI
 def mostrar_error(mensaje):
