@@ -71,7 +71,7 @@ def cifrar_imagen(ruta_imagen, clave, modo_aes_sel, iv_usuario):
         cifrado = cipher.encrypt(pad(pixeles, AES.block_size))
 
         nombre_original = Path(ruta_imagen).stem
-        nuevo_nombre = f"{nombre_original}_e_{modo_aes_sel.lower()}.bmp"
+        nuevo_nombre = f"{nombre_original}_e{modo_aes_sel.lower()}.bmp"
 
         with open(nuevo_nombre, 'wb') as out:
             out.write(encabezado)
@@ -125,7 +125,7 @@ def descifrar_imagen(ruta_cifrada, clave, modo_aes_sel, iv_usuario):
 
     # Guardar BMP reconstruido
     nombre_original = Path(ruta_cifrada).stem
-    nuevo_nombre = f"{nombre_original}_d_{modo_aes_sel.lower()}.bmp"
+    nuevo_nombre = f"{nombre_original}_d{modo_aes_sel.lower()}.bmp"
     with open(nuevo_nombre, 'wb') as out:
         out.write(encabezado)
         out.write(datos_desc)
