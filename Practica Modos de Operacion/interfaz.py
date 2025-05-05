@@ -15,7 +15,7 @@ def ejecutar_accion():
     accion = modo_accion.get()
     modo_aes_sel = modo_aes.get()
     clave = valor_llave.get()
-    iv = valor_iv.get()
+    c0 = valor_c0.get()
     ruta = label_archivo.cget("text")
     extension = os.path.splitext(ruta)[1]
 
@@ -30,17 +30,17 @@ def ejecutar_accion():
         mostrar_error("Clave AES debe tener 16")
         return
 
-    if len(iv) != 16:
-        mostrar_error("El IV debe tener exactamente 16")
+    if len(c0) != 16:
+        mostrar_error("El C0 debe tener exactamente 16")
         return
 
     if accion == 'cifrar':
-        cifrar_imagen(ruta, clave, modo_aes_sel, iv)
+        cifrar_imagen(ruta, clave, modo_aes_sel, c0)
     else:
-        descifrar_imagen(ruta, clave, modo_aes_sel, iv)
+        descifrar_imagen(ruta, clave, modo_aes_sel, c0)
 
 # cifrado de imagen BMP con diferentes modos AES
-def cifrar_imagen(ruta_imagen, clave, modo_aes_sel, iv_usuario):
+def cifrar_imagen(ruta_imagen, clave, modo_aes_sel, c0_usuario):
     try:
         with open(ruta_imagen, 'rb') as f:
             datos = f.read()
@@ -60,13 +60,13 @@ def cifrar_imagen(ruta_imagen, clave, modo_aes_sel, iv_usuario):
 
         if modo_aes_sel == 'ECB':
             cipher = AES.new(key_bytes, modo_const)
-            iv = b''
+            c0 = b''
         elif modo_aes_sel == 'CTR':
             cipher = AES.new(key_bytes, modo_const)
             nonce = cipher.nonce
         else:
-            iv = iv_usuario.encode('utf-8') if iv_usuario else None
-            cipher = AES.new(key_bytes, modo_const, iv=iv)
+            c0 = c0_usuario.encode('utf-8') if c0_usuario else None
+            cipher = AES.new(key_bytes, modo_const, c0=c0)
 
         cifrado = cipher.encrypt(pad(pixeles, AES.block_size))
 
@@ -77,15 +77,15 @@ def cifrar_imagen(ruta_imagen, clave, modo_aes_sel, iv_usuario):
             out.write(encabezado)
             if modo_aes_sel == 'CTR':
                 out.write(nonce)
-            elif iv:
-                out.write(iv)
+            elif c0:
+                out.write(c0)
             out.write(cifrado)
 
     except Exception as e:
         print(f"Error al cifrar: {e}")
 
 # descifrado de imagen BMP con diferentes modos AES
-def descifrar_imagen(ruta_cifrada, clave, modo_aes_sel, iv_usuario):
+def descifrar_imagen(ruta_cifrada, clave, modo_aes_sel, c0_usuario):
     try:
         with open(ruta_cifrada, 'rb') as f:
             datos = f.read()
@@ -93,13 +93,13 @@ def descifrar_imagen(ruta_cifrada, clave, modo_aes_sel, iv_usuario):
         encabezado = datos[:pixel_offset]
 
         if modo_aes_sel == 'ECB':
-            iv = b''
+            c0 = b''
             datos_cifrados = datos[pixel_offset:]
         elif modo_aes_sel == 'CTR':
             nonce = datos[pixel_offset:pixel_offset+8]
             datos_cifrados = datos[pixel_offset+8:]
         else:
-            iv = datos[pixel_offset:pixel_offset+16] if not iv_usuario else iv_usuario.encode('utf-8')
+            c0 = datos[pixel_offset:pixel_offset+16] if not c0_usuario else c0_usuario.encode('utf-8')
             datos_cifrados = datos[pixel_offset+16:]
 
         key_bytes = clave.encode('utf-8')
@@ -117,7 +117,7 @@ def descifrar_imagen(ruta_cifrada, clave, modo_aes_sel, iv_usuario):
         elif modo_aes_sel == 'CTR':
             cipher = AES.new(key_bytes, modo_const, nonce=nonce)
         else:
-            cipher = AES.new(key_bytes, modo_const, iv=iv)
+            cipher = AES.new(key_bytes, modo_const, c0=c0)
 
         datos_desc = unpad(cipher.decrypt(datos_cifrados), AES.block_size)
 
@@ -183,9 +183,9 @@ valor_llave = Entry(main_frame, width=30, font=("Helvetica", 11))
 valor_llave.grid(row=3, column=1, columnspan=3, padx=10, pady=5, sticky="w")
 
 # Valor del vector de inicialización (IV)
-Label(main_frame, text="Vector de inicialización (IV):", bg="#F0F0F0", font=("Helvetica", 11)).grid(row=4, column=0, sticky="w", padx=10)
-valor_iv = Entry(main_frame, width=30, font=("Helvetica", 11))
-valor_iv.grid(row=4, column=1, columnspan=3, padx=10, pady=5, sticky="w")
+Label(main_frame, text="Vector de inicialización (C0):", bg="#F0F0F0", font=("Helvetica", 11)).grid(row=4, column=0, sticky="w", padx=10)
+valor_c0 = Entry(main_frame, width=30, font=("Helvetica", 11))
+valor_c0.grid(row=4, column=1, columnspan=3, padx=10, pady=5, sticky="w")
 
 # Botón de ejecución
 Button(main_frame, text="Ejecutar", command=ejecutar_accion, bg="#800020", fg="#FFFFFF", font=("Helvetica", 12, 'bold'), width=10, height=2).grid(row=5, column=0, columnspan=5, pady=30)
