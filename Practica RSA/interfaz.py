@@ -36,7 +36,7 @@ def rsa_decrypt_file(path, key_pem):
 
 def seleccionar_archivo():
     archivo = filedialog.askopenfilename(
-        filetypes=[("BMP", "*.bmp"), ("TXT", "*.txt")]
+        filetypes=[("TXT", "*.txt")]
     )
     if archivo:
         label_archivo.config(text=archivo)
