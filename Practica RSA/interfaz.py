@@ -63,7 +63,7 @@ def mostrar_error(msg):
     status_label.config(text=msg, fg="#D00")
 
 root = Tk()
-root.title("RSA-2048: Cifrar y Descifrar")
+root.title("Practica RSA")
 root.geometry("850x650")
 root.configure(bg="#F0F0F0")
 
@@ -71,7 +71,7 @@ root.configure(bg="#F0F0F0")
 header = Frame(root, bg="#800020", bd=1, relief="solid")
 header.pack(fill=X)
 Label(
-    header, text="RSA-2048: Cifrar y Descifrar", fg="#FFF",
+    header, text="Practica RSA", fg="#FFF",
     bg="#800020", font=("Helvetica", 16, "bold"), pady=8
 ).pack()
 
