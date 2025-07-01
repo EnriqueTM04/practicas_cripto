@@ -292,7 +292,7 @@ def generar_nuevas_claves_dh():
 
 # Crear ventana principal
 root = Tk()
-root.title("Práctica Criptografía Híbrida - DH Automático")
+root.title("Práctica Criptografía Híbrida")
 root.geometry("900x750")
 root.configure(bg="#F0F0F0")
 
@@ -301,7 +301,7 @@ header = Frame(root, bg="#800020", bd=1, relief="solid")
 header.pack(fill=X)
 Label(
     header,
-    text="Práctica Criptografía Híbrida - DH Automático",
+    text="Práctica Criptografía Híbrida",
     fg="#FFF",
     bg="#800020",
     font=("Helvetica", 16, "bold"),
