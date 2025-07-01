@@ -17,7 +17,6 @@ import base64
 # Variables globales
 archivo_seleccionado = ""
 modo_operacion = None
-parametros_dh = {}
 
 
 def generar_clave_dh(g, n, a):
@@ -34,6 +33,21 @@ def derivar_clave_aes(secreto_compartido):
     """Deriva una clave AES de 256 bits del secreto compartido"""
     hash_obj = hashlib.sha256(str(secreto_compartido).encode())
     return hash_obj.digest()
+
+
+def generar_parametros_dh():
+    """Genera automáticamente las claves privadas de Diffie-Hellman"""
+    # Generar claves privadas aleatorias
+    a = secrets.randbelow(100) + 1  # Entre 1 y 100
+    b = secrets.randbelow(100) + 1  # Entre 1 y 100
+
+    # Actualizar la interfaz con los valores generados
+    entry_a.delete(0, END)
+    entry_a.insert(0, str(a))
+    entry_b.delete(0, END)
+    entry_b.insert(0, str(b))
+
+    return a, b
 
 
 def seleccionar_archivo():
@@ -86,6 +100,10 @@ def cifrar_archivo():
         messagebox.showerror("Error", "Debe seleccionar un archivo")
         return
 
+    # Generar automáticamente las claves privadas DH
+    log_text.insert(END, "Generando claves privadas de Diffie-Hellman...\n")
+    generar_parametros_dh()
+
     # Obtener parámetros DH
     params = obtener_parametros_dh()
     if not params:
@@ -111,9 +129,11 @@ def cifrar_archivo():
         secreto_compartido = calcular_secreto_compartido(clave_publica_b, a, p)
         clave_aes = derivar_clave_aes(secreto_compartido)
 
+        log_text.insert(END, f"Parámetros DH generados - g: {g}, p: {p}\n")
+        log_text.insert(END, f"Claves privadas - a: {a}, b: {b}\n")
         log_text.insert(END, f"Clave pública A: {clave_publica_a}\n")
         log_text.insert(END, f"Clave pública B: {clave_publica_b}\n")
-        log_text.insert(END, "Secreto compartido generado\n")
+        log_text.insert(END, "Secreto compartido generado para AES\n")
 
         # 2. Cifrar con AES CBC
         iv = secrets.token_bytes(16)  # Vector de inicialización
@@ -138,11 +158,9 @@ def cifrar_archivo():
         log_text.insert(END, "Firma RSA generada\n")
 
         # 5. Crear archivo final
-        # Formato: IV (16 bytes) + Contenido cifrado + Separador + Firma + Parámetros DH
+        # Formato simplificado: IV (16 bytes) + Contenido cifrado + Separador + Firma
         separador = b"---FIRMA---"
-        datos_dh = f"DH_PARAMS:g={g},p={p},pub_a={clave_publica_a},pub_b={clave_publica_b}".encode()
-
-        contenido_final = iv + contenido_cifrado + separador + firma + b"---DH---" + datos_dh
+        contenido_final = iv + contenido_cifrado + separador + firma
 
         # Guardar archivo cifrado
         base, _ = os.path.splitext(archivo_seleccionado)
@@ -151,8 +169,9 @@ def cifrar_archivo():
             f.write(contenido_final)
 
         log_text.insert(END, f"Archivo cifrado guardado como: {archivo_salida}\n")
+        log_text.insert(END, "IMPORTANTE: Para descifrar, use los mismos parámetros DH mostrados arriba\n")
         messagebox.showinfo("Éxito",
-                            f"Archivo cifrado correctamente.\nGuardado como: {os.path.basename(archivo_salida)}")
+                            f"Archivo cifrado correctamente.\nGuardado como: {os.path.basename(archivo_salida)}\n\nRECUERDE: Anote los parámetros DH mostrados en el log para poder descifrar.")
 
     except Exception as e:
         log_text.insert(END, f"Error durante el cifrado: {str(e)}\n")
@@ -164,7 +183,7 @@ def descifrar_archivo():
         messagebox.showerror("Error", "Debe seleccionar un archivo cifrado")
         return
 
-    # Obtener parámetros DH
+    # Obtener parámetros DH (deben ser los mismos usados en el cifrado)
     params = obtener_parametros_dh()
     if not params:
         return
@@ -183,28 +202,29 @@ def descifrar_archivo():
 
         log_text.insert(END, "Iniciando proceso de descifrado...\n")
 
-        # Separar componentes
-        if b"---DH---" not in contenido_cifrado_completo:
-            raise ValueError("Formato de archivo no válido")
+        # Separar componentes (solo IV + contenido cifrado + firma)
+        if b"---FIRMA---" not in contenido_cifrado_completo:
+            raise ValueError("Formato de archivo no válido - no se encontró separador de firma")
 
-        contenido_sin_dh, datos_dh = contenido_cifrado_completo.split(b"---DH---", 1)
-
-        if b"---FIRMA---" not in contenido_sin_dh:
-            raise ValueError("Formato de archivo no válido")
-
-        datos_cifrados, firma = contenido_sin_dh.split(b"---FIRMA---", 1)
+        datos_cifrados, firma = contenido_cifrado_completo.split(b"---FIRMA---", 1)
 
         # Extraer IV y contenido cifrado
+        if len(datos_cifrados) < 16:
+            raise ValueError("Archivo demasiado pequeño - formato inválido")
+
         iv = datos_cifrados[:16]
         contenido_cifrado = datos_cifrados[16:]
 
         log_text.insert(END, "Componentes del archivo separados\n")
 
-        # Recalcular secreto compartido
+        # Recalcular secreto compartido con los parámetros proporcionados
         clave_publica_a = generar_clave_dh(g, p, a)
         clave_publica_b = generar_clave_dh(g, p, b)
         secreto_compartido = calcular_secreto_compartido(clave_publica_b, a, p)
         clave_aes = derivar_clave_aes(secreto_compartido)
+
+        log_text.insert(END, f"Usando parámetros DH - g: {g}, p: {p}, a: {a}, b: {b}\n")
+        log_text.insert(END, "Secreto compartido recalculado\n")
 
         # Descifrar con AES
         cipher_aes = AES.new(clave_aes, AES.MODE_CBC, iv)
@@ -231,11 +251,11 @@ def descifrar_archivo():
             pkcs1_15.new(clave_publica_rsa).verify(hash_obj, firma)
             resultado_verificacion = "✓ FIRMA VÁLIDA - El documento es auténtico"
             log_text.insert(END, "Verificación de firma: ÉXITO\n")
-            messagebox.showinfo("Verificación", resultado_verificacion)
+            messagebox.showinfo("Verificación", f"Descifrado exitoso!\n\n{resultado_verificacion}")
         except:
             resultado_verificacion = "✗ FIRMA INVÁLIDA - El documento puede haber sido modificado"
             log_text.insert(END, "Verificación de firma: FALLÓ\n")
-            messagebox.showwarning("Verificación", resultado_verificacion)
+            messagebox.showwarning("Verificación", f"Descifrado completado, pero:\n\n{resultado_verificacion}")
 
         log_text.insert(END, f"Resultado: {resultado_verificacion}\n")
 
@@ -255,11 +275,24 @@ def procesar():
 
 def limpiar_log():
     log_text.delete(1.0, END)
+    # Restaurar mensaje inicial
+    log_text.insert(END, "Programa de Criptografía Híbrida iniciado.\n")
+    log_text.insert(END, "Funcionalidades:\n")
+    log_text.insert(END, "- Cifrado AES-CBC con claves derivadas de Diffie-Hellman\n")
+    log_text.insert(END, "- Firma digital RSA con hash SHA3\n")
+    log_text.insert(END, "- Verificación de integridad y autenticidad\n")
+    log_text.insert(END, "- Generación automática de claves DH para cifrado\n\n")
+
+
+def generar_nuevas_claves_dh():
+    """Botón para generar nuevas claves DH manualmente"""
+    generar_parametros_dh()
+    log_text.insert(END, f"Nuevas claves DH generadas - a: {entry_a.get()}, b: {entry_b.get()}\n")
 
 
 # Crear ventana principal
 root = Tk()
-root.title("Práctica Criptografía Híbrida")
+root.title("Práctica Criptografía Híbrida - DH Automático")
 root.geometry("900x750")
 root.configure(bg="#F0F0F0")
 
@@ -268,7 +301,7 @@ header = Frame(root, bg="#800020", bd=1, relief="solid")
 header.pack(fill=X)
 Label(
     header,
-    text="Práctica Criptografía Híbrida",
+    text="Práctica Criptografía Híbrida - DH Automático",
     fg="#FFF",
     bg="#800020",
     font=("Helvetica", 16, "bold"),
@@ -312,7 +345,7 @@ Radiobutton(frame_modo, text="Cifrar", variable=modo_operacion, value="cifrar").
 Radiobutton(frame_modo, text="Descifrar", variable=modo_operacion, value="descifrar").pack(side=LEFT, padx=10)
 
 # Parámetros Diffie-Hellman
-frame_dh = LabelFrame(main, text="Parámetros Diffie-Hellman", font=("Helvetica", 10, "bold"))
+frame_dh = LabelFrame(main, text="Parámetros Diffie-Hellman (Automáticos en cifrado)", font=("Helvetica", 10, "bold"))
 frame_dh.pack(fill=X, pady=5)
 
 Label(frame_dh, text="g:").grid(row=0, column=0, padx=5, pady=2)
@@ -320,7 +353,7 @@ entry_g = Entry(frame_dh, width=10)
 entry_g.grid(row=0, column=1, padx=5, pady=2)
 entry_g.insert(0, "2")
 
-Label(frame_dh, text="n:").grid(row=0, column=2, padx=5, pady=2)
+Label(frame_dh, text="p (primo):").grid(row=0, column=2, padx=5, pady=2)
 entry_n = Entry(frame_dh, width=15)
 entry_n.grid(row=0, column=3, padx=5, pady=2)
 entry_n.insert(0, "23")
@@ -334,6 +367,11 @@ Label(frame_dh, text="b (privada):").grid(row=1, column=2, padx=5, pady=2)
 entry_b = Entry(frame_dh, width=10)
 entry_b.grid(row=1, column=3, padx=5, pady=2)
 entry_b.insert(0, "15")
+
+Button(frame_dh, text="Generar Nuevas Claves", command=generar_nuevas_claves_dh, bg="#9C27B0", fg="white").grid(row=1,
+                                                                                                                column=4,
+                                                                                                                padx=5,
+                                                                                                                pady=2)
 
 # Claves RSA
 frame_rsa = LabelFrame(main, text="Claves RSA", font=("Helvetica", 10, "bold"))
@@ -373,6 +411,7 @@ log_text.insert(END, "Programa de Criptografía Híbrida iniciado.\n")
 log_text.insert(END, "Funcionalidades:\n")
 log_text.insert(END, "- Cifrado AES-CBC con claves derivadas de Diffie-Hellman\n")
 log_text.insert(END, "- Firma digital RSA con hash SHA3\n")
-log_text.insert(END, "- Verificación de integridad y autenticidad\n\n")
+log_text.insert(END, "- Verificación de integridad y autenticidad\n")
+log_text.insert(END, "- Generación automática de claves DH para cifrado\n\n")
 
 root.mainloop()
