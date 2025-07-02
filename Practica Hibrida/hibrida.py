@@ -353,7 +353,7 @@ entry_g = Entry(frame_dh, width=10)
 entry_g.grid(row=0, column=1, padx=5, pady=2)
 entry_g.insert(0, "2")
 
-Label(frame_dh, text="p (primo):").grid(row=0, column=2, padx=5, pady=2)
+Label(frame_dh, text="n:").grid(row=0, column=2, padx=5, pady=2)
 entry_n = Entry(frame_dh, width=15)
 entry_n.grid(row=0, column=3, padx=5, pady=2)
 entry_n.insert(0, "23")
