@@ -102,7 +102,7 @@ def cifrar_archivo():
 
     # Generar automáticamente las claves privadas DH
     log_text.insert(END, "Generando claves privadas de Diffie-Hellman...\n")
-    generar_parametros_dh()
+    # generar_parametros_dh()
 
     # Obtener parámetros DH
     params = obtener_parametros_dh()
